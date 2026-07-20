@@ -52,6 +52,21 @@
   #ligne2 { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
   #ligne2 .btn { flex:1; min-width:64px; text-align:center; }
   #abInfo { color:var(--or); font-size:12.5px; text-align:center; margin-top:4px; min-height:16px; }
+
+  /* ---------- TABLETTE EN PAYSAGE : partition plein écran, lecteur sur le côté ---------- */
+  @media (orientation: landscape) and (pointer: coarse) {
+    #lecteur { position:fixed; top:0; right:0; bottom:0; width:252px; overflow-y:auto;
+               border-left:1px solid #333; border-top:none; padding-top:54px; z-index:20; }
+    #haut { position:fixed; top:0; left:0; right:252px; z-index:21; }
+    #scene { margin-top:52px; margin-right:252px; }
+    #sousT { position:fixed; left:0; right:252px; bottom:0; z-index:15;
+             background:rgba(26,26,34,.93); max-height:24vh; }
+    #pistes { flex-direction:column; }
+    #pistes .btn { min-width:0; }
+    #barre { flex-wrap:wrap; }
+    #pos { min-width:100%; order:3; }
+    #ligne2 .btn { min-width:60px; font-size:13px; padding:8px 4px; }
+  }
 </style>
 </head>
 <body>
@@ -61,6 +76,7 @@
   <select id="toc"></select>
   <button class="btn corail" id="modeBaron" title="Seulement tes pages">Pages Baron</button>
   <button class="btn actif" id="suivi" title="Les pages tournent toutes seules avec l'audio">📖 Suivi</button>
+  <button class="btn" id="plein" title="Plein écran">⛶</button>
   <button class="btn" onclick="location.href='fiches/index.html'">📄 Fiches</button>
 </div>
 
@@ -98,6 +114,9 @@
     <button class="btn" id="bA">A</button>
     <button class="btn" id="bB">B</button>
     <button class="btn" id="bX">✕ boucle</button>
+    <button class="btn actif" data-gain="1">🔊 1×</button>
+    <button class="btn" data-gain="1.5">🔊 1,5×</button>
+    <button class="btn" data-gain="2">🔊 2×</button>
   </div>
   <div id="abInfo"></div>
 </div>
@@ -196,9 +215,33 @@ function suiviTick() {
   }
 }
 
+/* ------- amplificateur (permet de dépasser le volume maximum normal) ------- */
+let ctx = null, gainNode = null, gainVal = 1;
+function initAmpli() {
+  if (ctx) return;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ctx.createMediaElementSource(audio);
+    gainNode = ctx.createGain(); gainNode.gain.value = gainVal;
+    src.connect(gainNode); gainNode.connect(ctx.destination);
+  } catch (e) { ctx = 'ko'; }
+}
+document.querySelectorAll('[data-gain]').forEach(b => b.onclick = () => {
+  gainVal = parseFloat(b.dataset.gain);
+  if (gainNode) gainNode.gain.value = gainVal; else audio.volume = Math.min(1, gainVal);
+  document.querySelectorAll('[data-gain]').forEach(x => x.classList.toggle('actif', x === b));
+});
+
+/* plein écran (cache la barre du navigateur sur tablette) */
+document.getElementById('plein').onclick = () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+};
+
 const jouer = document.getElementById('jouer');
 jouer.onclick = () => {
   if (!audio.src) document.querySelector('#pistes .btn').click();
+  initAmpli(); if (ctx && ctx.resume) ctx.resume();
   if (audio.paused) { audio.play(); } else { audio.pause(); }
 };
 audio.onplay = () => jouer.textContent = '⏸';
