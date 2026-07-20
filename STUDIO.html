@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>🎭 Baron Douphol — Studio Tablette</title>
+<style>
+  :root { --or:#d4af37; --corail:#ff9d7a; --fond:#0e0e12; --panneau:#1a1a22; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body { background:var(--fond); color:#eee; font-family:Georgia,serif;
+         display:flex; flex-direction:column; overflow:hidden; user-select:none; }
+
+  /* ---------- barre du haut ---------- */
+  #haut { display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--panneau);
+          border-bottom:1px solid #333; flex-wrap:wrap; }
+  #haut .titre { color:var(--or); font-weight:bold; font-size:15px; letter-spacing:.5px; }
+  select { background:#26262e; color:#eee; border:1px solid #444; border-radius:8px;
+           padding:8px 10px; font-size:14px; max-width:46vw; }
+  .btn { background:#26262e; color:#eee; border:1px solid #444; border-radius:10px;
+         padding:9px 14px; font-size:15px; cursor:pointer; }
+  .btn.actif { background:var(--or); color:#111; border-color:var(--or); font-weight:bold; }
+  .btn.corail { border-color:var(--corail); color:var(--corail); }
+  .btn.corail.actif { background:var(--corail); color:#111; }
+
+  /* ---------- zone partition ---------- */
+  #scene { flex:1; display:flex; min-height:0; position:relative; }
+  #imgwrap { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; position:relative; }
+  #page { max-width:100%; max-height:100%; object-fit:contain; background:#fff; border-radius:4px; }
+  .tap { position:absolute; top:0; bottom:0; width:26%; z-index:5; }
+  #tapG { left:0; }  #tapD { right:0; }
+  #numpage { position:absolute; top:8px; right:12px; background:rgba(0,0,0,.65); color:var(--or);
+             padding:4px 12px; border-radius:14px; font-size:16px; font-weight:bold; z-index:6; }
+
+  /* ---------- sous-titres ---------- */
+  #sousT { background:var(--panneau); border-top:1px solid #333; padding:8px 14px;
+           max-height:26vh; overflow-y:auto; font-size:16px; line-height:1.45; }
+  #sousT .it { color:#fff; }
+  #sousT .fr { color:#9fc5ff; font-style:italic; font-size:14.5px; }
+  #sousT .jeu { color:#8fdc9a; font-size:13.5px; }
+  #sousT .bar, .bar { color:var(--corail); font-weight:bold; }
+  #sousT:empty { display:none; }
+
+  /* ---------- lecteur ---------- */
+  #lecteur { background:var(--panneau); border-top:1px solid #333; padding:8px 10px 12px; }
+  #pistes { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+  #pistes .btn { flex:1; min-width:120px; text-align:center; font-size:13.5px; padding:10px 6px; }
+  #barre { display:flex; align-items:center; gap:10px; }
+  #jouer { width:64px; height:52px; font-size:24px; border-radius:14px; }
+  #temps { font-variant-numeric:tabular-nums; font-size:13px; color:#aaa; min-width:86px; text-align:center; }
+  #pos { flex:1; accent-color:var(--or); height:30px; }
+  #ligne2 { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  #ligne2 .btn { flex:1; min-width:64px; text-align:center; }
+  #abInfo { color:var(--or); font-size:12.5px; text-align:center; margin-top:4px; min-height:16px; }
+</style>
+</head>
+<body>
+
+<div id="haut">
+  <span class="titre">🎭 BARON</span>
+  <select id="toc"></select>
+  <button class="btn corail" id="modeBaron" title="Seulement tes pages">Pages Baron</button>
+  <button class="btn actif" id="suivi" title="Les pages tournent toutes seules avec l'audio">📖 Suivi</button>
+  <button class="btn" onclick="location.href='fiches/index.html'">📄 Fiches</button>
+</div>
+
+<div id="scene">
+  <div id="imgwrap">
+    <img id="page" alt="partition">
+    <div id="numpage"></div>
+    <div class="tap" id="tapG"></div>
+    <div class="tap" id="tapD"></div>
+  </div>
+</div>
+
+<div id="sousT"></div>
+
+<div id="lecteur">
+  <div id="pistes">
+    <button class="btn" data-f="CHANT ASSEMBLÉ (Acte 1).mp3">🎤 Chant A1</button>
+    <button class="btn" data-f="PIANO ASSEMBLÉ (Acte 1).mp3">🎹 Piano A1</button>
+    <button class="btn" data-f="CHANT ASSEMBLÉ (Acte 2).mp3">🎤 Chant A2</button>
+    <button class="btn" data-f="PIANO ASSEMBLÉ (Acte 2).mp3">🎹 Piano A2</button>
+    <button class="btn" data-f="STRETTA ENTIERE (ensemble).mp3">🎭 Stretta</button>
+  </div>
+  <div id="barre">
+    <button class="btn" id="jouer">▶</button>
+    <span id="temps">0:00 / 0:00</span>
+    <input type="range" id="pos" min="0" max="100" value="0" step="0.1">
+  </div>
+  <div id="ligne2">
+    <button class="btn" data-saut="-30">−30s</button>
+    <button class="btn" data-saut="-5">−5s</button>
+    <button class="btn" data-saut="5">+5s</button>
+    <button class="btn" data-vit="0.7">🐢 70%</button>
+    <button class="btn" data-vit="0.85">85%</button>
+    <button class="btn actif" data-vit="1">100%</button>
+    <button class="btn" id="bA">A</button>
+    <button class="btn" id="bB">B</button>
+    <button class="btn" id="bX">✕ boucle</button>
+  </div>
+  <div id="abInfo"></div>
+</div>
+
+<script src="subs.js"></script>
+<script src="sync_tablette.js"></script>
+<script>
+/* ================= PAGES ================= */
+const PAGES = [];
+for (let p = 6; p <= 64; p++) PAGES.push(p);
+for (let p = 139; p <= 206; p++) PAGES.push(p);
+let idx = 0, baronOnly = false;
+
+const setBaron = new Set(BARON_PAGES);
+function listeActive() { return baronOnly ? PAGES.filter(p => setBaron.has(p)) : PAGES; }
+
+function setPage(p) {
+  const L = listeActive();
+  let i = L.indexOf(p);
+  if (i < 0) { i = L.findIndex(x => x >= p); if (i < 0) i = L.length - 1; }
+  idx = i;
+  const page = L[idx];
+  document.getElementById('page').src = 'pages/p' + String(page).padStart(3, '0') + '.jpg';
+  document.getElementById('numpage').textContent = 'p. ' + page;
+  const s = (typeof SUBS !== 'undefined') ? SUBS.find(x => page >= x.a && page <= x.b) : null;
+  const st = document.getElementById('sousT');
+  st.innerHTML = s ? ((s.it ? '<div class="it">' + s.it + '</div>' : '') +
+                     (s.fr ? '<div class="fr">' + s.fr + '</div>' : '') +
+                     (s.jeu ? '<div class="jeu">🎭 ' + s.jeu + '</div>' : '')) : '';
+  document.getElementById('toc').value = '' + page;
+  localStorage.setItem('baronPage', page);
+}
+function bouger(d) { const L = listeActive(); idx = Math.min(Math.max(idx + d, 0), L.length - 1); setPage(L[idx]); }
+
+document.getElementById('tapG').onclick = () => bouger(-1);
+document.getElementById('tapD').onclick = () => bouger(1);
+/* clic directement SUR la partition : moitié gauche = reculer, moitié droite = avancer */
+document.getElementById('page').onclick = e => {
+  const r = e.target.getBoundingClientRect();
+  bouger(e.clientX < r.left + r.width / 2 ? -1 : 1);
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') bouger(1);
+  if (e.key === 'ArrowLeft') bouger(-1);
+  if (e.key === ' ') { e.preventDefault(); document.getElementById('jouer').click(); }
+});
+
+/* sommaire */
+const toc = document.getElementById('toc');
+if (typeof TOC !== 'undefined') {
+  let g = null;
+  TOC.forEach(t => {
+    if (t.h) { g = document.createElement('optgroup'); g.label = t.h; toc.appendChild(g); }
+    else { const o = document.createElement('option'); o.value = t.p; o.textContent = t.n + ' — p.' + t.p; (g || toc).appendChild(o); }
+  });
+}
+toc.onchange = () => setPage(parseInt(toc.value, 10));
+
+document.getElementById('modeBaron').onclick = function () {
+  baronOnly = !baronOnly; this.classList.toggle('actif', baronOnly);
+  const L = listeActive(); setPage(L[Math.min(idx, L.length - 1)]);
+};
+
+/* ================= AUDIO ================= */
+const audio = new Audio();
+let vitesse = 1, A = null, B = null, fichier = null, suiviOn = true;
+audio.preservesPitch = true;
+
+document.querySelectorAll('#pistes .btn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#pistes .btn').forEach(x => x.classList.remove('actif'));
+    b.classList.add('actif');
+    const t = audio.currentTime, enCours = !audio.paused;
+    fichier = b.dataset.f;
+    audio.src = 'audio/' + fichier;
+    audio.playbackRate = vitesse;
+    audio.currentTime = t || 0;
+    if (enCours) audio.play();
+  };
+});
+
+/* ------- suivi automatique des pages (calibration convertie de Reaper) ------- */
+document.getElementById('suivi').onclick = function () {
+  suiviOn = !suiviOn; this.classList.toggle('actif', suiviOn);
+};
+function suiviTick() {
+  if (!suiviOn || audio.paused || !fichier) return;
+  if (typeof SYNC_TABLETTE === 'undefined' || !SYNC_TABLETTE[fichier]) return;
+  const ev = SYNC_TABLETTE[fichier];
+  let pg = null;
+  for (const [t, p] of ev) { if (t <= audio.currentTime) pg = p; else break; }
+  if (pg !== null) {
+    const L = listeActive();
+    if (L[idx] !== pg && L.includes(pg)) setPage(pg);
+    else if (L[idx] !== pg && !baronOnly) setPage(pg);
+  }
+}
+
+const jouer = document.getElementById('jouer');
+jouer.onclick = () => {
+  if (!audio.src) document.querySelector('#pistes .btn').click();
+  if (audio.paused) { audio.play(); } else { audio.pause(); }
+};
+audio.onplay = () => jouer.textContent = '⏸';
+audio.onpause = () => jouer.textContent = '▶';
+
+const pos = document.getElementById('pos'), temps = document.getElementById('temps');
+function fmt(s) { s = Math.max(0, s | 0); return (s / 60 | 0) + ':' + String(s % 60).padStart(2, '0'); }
+audio.ontimeupdate = () => {
+  if (audio.duration) { pos.value = audio.currentTime / audio.duration * 100; }
+  temps.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration || 0);
+  if (A !== null && B !== null && audio.currentTime >= B) audio.currentTime = A;
+  suiviTick();
+};
+pos.oninput = () => { if (audio.duration) audio.currentTime = pos.value / 100 * audio.duration; };
+
+document.querySelectorAll('[data-saut]').forEach(b => b.onclick = () => {
+  audio.currentTime = Math.max(0, audio.currentTime + parseFloat(b.dataset.saut));
+});
+document.querySelectorAll('[data-vit]').forEach(b => b.onclick = () => {
+  vitesse = parseFloat(b.dataset.vit); audio.playbackRate = vitesse;
+  document.querySelectorAll('[data-vit]').forEach(x => x.classList.toggle('actif', x === b));
+});
+
+const abInfo = document.getElementById('abInfo');
+function majAB() {
+  abInfo.textContent = (A !== null ? 'A = ' + fmt(A) : '') + (B !== null ? '   →   B = ' + fmt(B) + '   (boucle active ♾)' : (A !== null ? '   (appuie sur B pour fermer la boucle)' : ''));
+  document.getElementById('bA').classList.toggle('actif', A !== null);
+  document.getElementById('bB').classList.toggle('actif', B !== null);
+}
+document.getElementById('bA').onclick = () => { A = audio.currentTime; if (B !== null && B <= A) B = null; majAB(); };
+document.getElementById('bB').onclick = () => { if (A !== null && audio.currentTime > A) { B = audio.currentTime; audio.currentTime = A; } majAB(); };
+document.getElementById('bX').onclick = () => { A = B = null; majAB(); };
+
+/* reprendre où on en était */
+setPage(parseInt(localStorage.getItem('baronPage') || '6', 10));
+</script>
+</body>
+</html>
