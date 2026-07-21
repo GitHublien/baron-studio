@@ -31,6 +31,11 @@
 </head>
 <body>
 
+<div style="text-align:center;margin-bottom:14px;padding:8px;background:#1a1a22;border:1px solid #444;border-radius:10px">
+<a href="../STUDIO.html" style="color:#9fc5ff;text-decoration:none;margin:0 10px">🏠 Studio Traviata</a>
+<a href="PROGRAMME - Qui fait quoi + textes de Jacques.html" style="color:#d4af37;text-decoration:none;margin:0 10px">📜 Programme qui fait quoi</a>
+</div>
+
 <h1>🎩 Une soirée chez Jacques Offenbach</h1>
 <div class="date">Jeudi 23 juillet 2026 · 21h30 · Château de l'Empéri — répétition 14h-17h30 salle conservatoire</div>
 
@@ -141,5 +146,45 @@
 <div class="qui">TOUS — medley Orphée + Vie parisienne, monté sur place avec Noélie 🎉</div>
 <a href="03 - Autres (Pomme d Api, Orphee, Grande Duchesse)/MEDLEY FINAL - Ce bal est original + Feu partout (un seul PDF).pdf">📕 partition du medley (les deux collées en un seul PDF)</a></div>
 
+<!-- Lecteur intégré : audio/vidéo sans quitter la page, PDF dans un nouvel onglet -->
+<div id="lecteur" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99;
+     padding:16px;box-sizing:border-box;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <div id="lecteur-titre" style="color:#d4af37;font-size:16px;text-align:center;max-width:90%"></div>
+  <audio id="lecteur-audio" controls style="width:92%;max-width:600px;display:none"></audio>
+  <video id="lecteur-video" controls playsinline style="width:96%;max-height:70vh;display:none"></video>
+  <button onclick="fermerLecteur()" style="background:#d4af37;color:#000;border:none;border-radius:12px;
+     padding:14px 40px;font-size:18px;font-weight:bold;cursor:pointer">✕ RETOUR</button>
+</div>
+<script>
+const lec = document.getElementById('lecteur');
+const lecA = document.getElementById('lecteur-audio');
+const lecV = document.getElementById('lecteur-video');
+function fermerLecteur() {
+  lecA.pause(); lecV.pause(); lecA.removeAttribute('src'); lecV.removeAttribute('src');
+  lec.style.display = 'none';
+  if (history.state && history.state.lecteur) history.back();
+}
+window.addEventListener('popstate', () => {
+  if (lec.style.display !== 'none') { lecA.pause(); lecV.pause(); lec.style.display = 'none'; }
+});
+document.querySelectorAll('a').forEach(a => {
+  const h = a.getAttribute('href') || '';
+  if (/\.pdf$/i.test(h)) { a.target = '_blank'; a.rel = 'noopener'; }
+  else if (/\.(mp3|mp4)$/i.test(h)) {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const titre = a.closest('.num') ? a.closest('.num').querySelector('.t').textContent : a.textContent;
+      document.getElementById('lecteur-titre').textContent = titre + ' — ' + a.textContent.trim();
+      const video = /\.mp4$/i.test(h);
+      lecA.style.display = video ? 'none' : 'block';
+      lecV.style.display = video ? 'block' : 'none';
+      (video ? lecV : lecA).src = h;
+      lec.style.display = 'flex';
+      (video ? lecV : lecA).play();
+      history.pushState({lecteur: true}, '');
+    });
+  }
+});
+</script>
 </body>
 </html>
